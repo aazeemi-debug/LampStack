@@ -1,0 +1,181 @@
+ Set Up and Configure a LAMP Stack
+Step 1: Install Linux
+
+#Choose a Distribution: For this project, use a popular Linux distribution like Ubuntu, CentOS, or Debian.
+Initial Setup: Perform the initial setup of your Linux server, including updating the package manager and setting up a non-root user with sudo privileges.
+bash
+-
+sudo apt update && sudo apt upgrade -y   # Ubuntu/Debian
+sudo yum update -y                        # CentOS/RHEL
+Step 2: Install Apache
+
+#Install Apache: Use your package manager to install Apache.
+bash
+-
+sudo apt install apache2 -y        # Ubuntu/Debian
+sudo yum install httpd -y          # CentOS/RHEL
+#Start and Enable Apache: Ensure Apache starts on boot.
+bash
+-
+sudo systemctl start apache2       # Ubuntu/Debian
+sudo systemctl enable apache2
+
+sudo systemctl start httpd         # CentOS/RHEL
+sudo systemctl enable httpd
+#Test Apache: Open your browser and navigate to your server’s IP address. You should see the default Apache welcome page.
+Step 3: Install MySQL/MariaDB
+
+#Install MySQL/MariaDB:
+bash
+-
+sudo apt install mysql-server -y      # Ubuntu/Debian
+sudo yum install mariadb-server -y    # CentOS/RHEL
+#Start and Enable MySQL/MariaDB:
+bash
+-
+sudo systemctl start mysql            # Ubuntu/Debian
+sudo systemctl enable mysql
+
+sudo systemctl start mariadb          # CentOS/RHEL
+sudo systemctl enable mariadb
+Secure MySQL/MariaDB:
+bash
+-
+sudo mysql_secure_installation
+#Follow the prompts to set a root password, remove anonymous users, disallow root login remotely, and remove the test database.
+Step 4: Install PHP
+
+Install PHP:
+bash
+-
+sudo apt install php libapache2-mod-php php-mysql -y   # Ubuntu/Debian
+sudo yum install php php-mysql -y                      # CentOS/RHEL
+#Test PHP: Create a test PHP file in the web root directory.
+bash
+-
+sudo echo "<?php phpinfo(); ?>" > /var/www/html/info.php
+Access http://your_server_ip/info.php in your web browser to verify PHP is working.
+2. Secure the Web Server
+Step 5: Obtain and Install an SSL Certificate
+
+#Install Certbot:
+bash
+-
+sudo apt install certbot python3-certbot-apache -y    # Ubuntu/Debian
+sudo yum install certbot python3-certbot-apache -y    # CentOS/RHEL
+Obtain SSL Certificate:
+bash
+-
+sudo certbot --apache
+#Follow the prompts to obtain and install the SSL certificate. Certbot will automatically configure Apache to use HTTPS.
+Verify SSL: Access your site via https://your_domain to ensure the SSL certificate is working.
+Step 6: Configure the Firewall
+
+#Allow Necessary Ports:
+bash
+-
+sudo ufw allow 'Apache Full'     # Ubuntu
+sudo firewall-cmd --permanent --add-service=http
+sudo firewall-cmd --permanent --add-service=https
+sudo firewall-cmd --reload       # CentOS/RHEL
+Enable the Firewall:
+bash
+-
+sudo ufw enable                 # Ubuntu
+sudo systemctl enable firewalld
+sudo systemctl start firewalld  # CentOS/RHEL
+Step 7: Secure MySQL
+
+#Disable Remote Root Login: If not already done, ensure remote root login is disabled for security.
+bash
+-
+sudo mysql
+mysql> UPDATE mysql.user SET plugin = 'auth_socket' WHERE User = 'root';
+mysql> FLUSH PRIVILEGES;
+mysql> EXIT;
+3. Implement Automated Backups
+Step 8: Create a MySQL Backup Script
+
+Create a Shell Script:
+bash
+-
+nano /usr/local/bin/mysql_backup.sh
+#Add the Following Script:
+bash
+-
+#!/bin/bash
+DB_NAME="your_database_name"
+BACKUP_DIR="/backups/mysql"
+DATE=$(date +%F)
+mkdir -p $BACKUP_DIR
+mysqldump -u root -p your_password $DB_NAME > $BACKUP_DIR/$DB_NAME-$DATE.sql
+find $BACKUP_DIR/* -mtime +7 -delete
+This script creates a backup of your database and deletes backups older than 7 days.
+Make the Script Executable:
+bash
+-
+chmod +x /usr/local/bin/mysql_backup.sh
+Step 9: Create a Filesystem Backup Script
+
+#Create a Shell Script:
+bash
+-
+nano /usr/local/bin/filesystem_backup.sh
+#Add the Following Script:
+bash
+-
+#!/bin/bash
+BACKUP_DIR="/backups/filesystem"
+TARGET_DIR="/var/www/html"
+DATE=$(date +%F)
+mkdir -p $BACKUP_DIR
+tar -czvf $BACKUP_DIR/website-$DATE.tar.gz $TARGET_DIR
+find $BACKUP_DIR/* -mtime +7 -delete
+This script creates a compressed backup of your web root directory and deletes backups older than 7 days.
+Make the Script Executable:
+bash
+-
+chmod +x /usr/local/bin/filesystem_backup.sh
+Step 10: Schedule the Backups Using Cron
+
+#Open the Cron Job Editor:
+bash
+-
+crontab -e
+Add the Following Lines:
+bash
+-
+0 2 * * * /usr/local/bin/mysql_backup.sh
+0 3 * * * /usr/local/bin/filesystem_backup.sh
+#These cron jobs will run the database backup at 2:00 AM and the filesystem backup at 3:00 AM daily.
+4. Monitoring and Logging
+Step 11: Configure Log Rotation
+
+Install Logrotate:
+bash
+-
+sudo apt install logrotate -y   # Ubuntu/Debian
+sudo yum install logrotate -y   # CentOS/RHEL
+Configure Log Rotation:
+bash
+-
+sudo nano /etc/logrotate.d/apache2    # Ubuntu/Debian
+sudo nano /etc/logrotate.d/httpd      # CentOS/RHEL
+Add configuration for Apache logs, if not already present.
+Step 12: Set Up Monitoring Tools
+
+#Install Monitoring Tool: Choose a monitoring tool like Nagios, Zabbix, or Monit. Here’s an example using Monit:
+bash
+-
+sudo apt install monit -y            # Ubuntu/Debian
+sudo yum install monit -y            # CentOS/RHEL
+Configure Monitoring:
+bash
+-
+sudo nano /etc/monit/monitrc
+#Configure Monit to monitor Apache, MySQL, and other critical services.
+Start and Enable Monit:
+bash
+-
+sudo systemctl start monit
+sudo systemctl enable monit
